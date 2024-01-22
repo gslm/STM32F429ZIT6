@@ -1,0 +1,2 @@
+# STM32F429ZIT6
+STM32F429ZIT6 test project using CAN bus

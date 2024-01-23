@@ -21,7 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -42,6 +43,8 @@
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan1;
 
+UART_HandleTypeDef huart1;
+
 /* USER CODE BEGIN PV */
 CAN_RxHeaderTypeDef rxHeader; //CAN Bus Transmit Header
 CAN_TxHeaderTypeDef txHeader; //CAN Bus Receive Header
@@ -54,6 +57,7 @@ uint32_t canMailbox; //CAN Bus Mail box variable
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_CAN1_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -92,6 +96,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_CAN1_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   canfil.FilterBank = 0;
   canfil.FilterMode = CAN_FILTERMODE_IDMASK;
@@ -120,11 +125,27 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  char buf[256] = {0};
+	  char msg_buff[32] = {0};
+
 	  static uint8_t payload = 0;
+	  static uint8_t txcount = 0;
+	  int i = 0;
+
 	  uint8_t csend[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, (payload + 0x40), payload};
 	  payload++;
+	  txcount++;
 
 	  HAL_CAN_AddTxMessage(&hcan1,&txHeader,csend,&canMailbox);
+
+	  while (i < sizeof(csend))
+	  {
+	       snprintf(&msg_buff[i * 3], 4, "%02X-", (char)csend[i]);
+	       i++;
+	  }
+
+	  snprintf(buf, sizeof(buf), "Sending CAN1 TX message %d: %s\n", txcount, msg_buff);
+	  HAL_UART_Transmit(&huart1, (const uint8_t *)buf, strlen((const char *)buf), 0xFFFF);
 	  HAL_GPIO_TogglePin(LED_RED_GPIO_Port, LED_RED_Pin);
 	  HAL_Delay(100);
     /* USER CODE END WHILE */
@@ -209,6 +230,39 @@ static void MX_CAN1_Init(void)
   /* USER CODE BEGIN CAN1_Init 2 */
 
   /* USER CODE END CAN1_Init 2 */
+
+}
+
+/**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
 
 }
 
